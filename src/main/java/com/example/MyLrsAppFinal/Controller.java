@@ -536,9 +536,6 @@ public class Controller implements ErrorController {
         return new ResponseEntity<>(ver ,HttpStatus.OK);
     }
 
-
-
-
     @PostMapping("/addNewSection")
     public ResponseEntity<?> addNewsectionFromMap(@RequestBody NewRouteModel Le) {
         Integer ver = this.lrsService.addNewSectionService(Le);
@@ -562,7 +559,7 @@ public class Controller implements ErrorController {
         if(verrr == 0){
             Integer ver = this.lrsService.addNewRef(Le);
             System.out.println(Le.get(0).getRoute_name());
-            System.out.println(Le.get(0).getVoie());
+            System.out.println(Le.get(0).getVoie());    
             System.out.println(Le.get(0).getGeometry());
             if (ver == 0) {
                 return new ResponseEntity<>(HttpStatus.OK);
@@ -579,9 +576,6 @@ public class Controller implements ErrorController {
             errorResponse.setMessage("please verify that the lines intersects");
             return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
         }
-
-
-
 
     }
 
