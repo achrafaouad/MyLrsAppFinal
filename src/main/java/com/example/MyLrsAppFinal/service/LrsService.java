@@ -18,6 +18,7 @@ import java.util.*;
 @Service
 public class LrsService {
     private EventParamsRepository eventParamsRepository;
+    private UserRepo userRepo;
     private EventTypeRepository eventTypeRepository;
     private LinearEventReposiory linearEventReposiory;
     private LrsRoutesRepository lrsRoutesRepository;
@@ -31,6 +32,7 @@ public class LrsService {
     private Integer id;
     private ResourceLoader resourceLoader;
     private VideoRepository videoRepository;
+    private ProfilRepository profilRepository;
 
     private static final String FORMAT="classpath:videos/%s.mp4";
     
@@ -38,9 +40,10 @@ public class LrsService {
 
 
     @Autowired
-    LrsService( SymbologyRepo symbologyRepo, EventParamsRepository eventParamsRepository, EventTypeRepository eventTypeRepository, LinearEventReposiory linearEventReposiory, LrsRoutesRepository lrsRoutesRepository, PonctuelEventReposiotory ponctuelEventReposiotory, ProvinceRepository provinceRepository, ReferenceRepository referenceRepository, RegionRepository regionRepository, LinearEntityRepo linearEntityRepo, PonctuelEntityRepo ponctuelEntityRepo, ResourceLoader resourceLoader, VideoRepository videoRepository) throws IOException {
+    LrsService(SymbologyRepo symbologyRepo, EventParamsRepository eventParamsRepository, UserRepo userRepo, EventTypeRepository eventTypeRepository, LinearEventReposiory linearEventReposiory, LrsRoutesRepository lrsRoutesRepository, PonctuelEventReposiotory ponctuelEventReposiotory, ProvinceRepository provinceRepository, ReferenceRepository referenceRepository, RegionRepository regionRepository, LinearEntityRepo linearEntityRepo, PonctuelEntityRepo ponctuelEntityRepo, ResourceLoader resourceLoader, VideoRepository videoRepository, ProfilRepository profilRepository) throws IOException {
 
         this.eventParamsRepository = eventParamsRepository;
+        this.userRepo = userRepo;
         this.eventTypeRepository = eventTypeRepository;
         this.linearEventReposiory = linearEventReposiory;
         this.lrsRoutesRepository = lrsRoutesRepository;
@@ -53,6 +56,7 @@ public class LrsService {
         this.ponctuelEntityRepo = ponctuelEntityRepo;
         this.resourceLoader = resourceLoader;
         this.videoRepository = videoRepository;
+        this.profilRepository = profilRepository;
     }
 
 
@@ -104,19 +108,16 @@ public class LrsService {
     }
 
  public List<String> getProvinces() {
-
         List<Province> eventType = this.provinceRepository.findAll();
         List<String> mesProvinces = new ArrayList();
         for(Province i : eventType){
             mesProvinces.add(i.getName());
         }
         return  mesProvinces;
-
     }
 
 
     public Province getProvinceByName(String name) {
-
         Province province = this.provinceRepository.findProvinceByName(name);
         System.out.println(name);
         System.out.println(province);
@@ -226,6 +227,7 @@ public class LrsService {
             }
             return 0;
         }catch(Exception e){
+            System.out.println("catch");
             return this.id;
         }
     }
@@ -274,7 +276,10 @@ public List<String> getGeojsonValuesdrowPoint( Double event_position , String ro
 
 
 
+    public Double getByCoordEvent(MapPoint p){
+        return this.ponctuelEventReposiotory.getByCoordEvent(p.getX(),p.getY());
 
+    }
 
     public int addNewPointFromMapService(MapPoint p){
         try{
@@ -366,30 +371,142 @@ public List<String> getGeojsonValuesdrowPoint( Double event_position , String ro
         return resultList;
     }
 
-    public  List<Map<String,?>> queryLinearData2(QueryLineData le) {
-
+    public  List<Map<String,String>> queryLinearData2(QueryLineData le) throws SQLException, IOException {
+        List<Map<String,String>> resultList2 = new ArrayList<>();
         List<Map<String,?>> resultList = this.linearEventReposiory.QueryData(le.getThematique1(),le.getThematique2());
+        int regionIndex = 1;
 
-        return resultList;
+        for(Map<String, ?> intersection : resultList) {
+
+            System.out.println("\nIndia Region - " + regionIndex);
+            System.out.println("============================"
+                    + "======================");
+
+            // get entrySet() into Set
+            Set<String> setOfIndianStates = intersection.keySet();
+
+            // Collection Iterator
+            Iterator<String> iterator =
+                    setOfIndianStates.iterator();
+
+            // iterate using while-loop after getting Iterator
+            Map<String,String> map = new HashMap<String, String>();
+            while(iterator.hasNext()) {
+
+                String key = iterator.next();
+                if(key.equals("ROUTE_GEOMETRY") || key.equals("ROUTE_GEOMETRY_1")){
+                    Clob varr = (Clob) intersection.get(key);
+                    Reader r = varr.getCharacterStream();
+                    int j = 0;
+                    StringBuffer buffer = new StringBuffer();
+                    int ch;
+                    while ((ch = r.read())!=-1) {
+                        buffer.append(""+(char)ch);
+                    }
+                    String data = buffer.toString();
+                    j++;
+                    map.put(key,data);
+
+
+                }else{
+                    System.out.println("State : " + key
+                            + "\tCapital : " + intersection.get(key));
+                    map.put(key,"" + intersection.get(key));
+
+                }
+
+            }
+
+            // increment region index by 1
+            resultList2.add(map);
+            regionIndex++;
+        }
+        return resultList2;
     }
 
+//labalena
 
-
-    public  List<Map<String,?>> queryLinearAndPonctual(QueryLineData le) {
+    public  List<Map<String,String>> queryLinearAndPonctual(QueryLineData le) throws SQLException, IOException {
         System.out.println(le);
+        List<Map<String,String>> resultList2 = new ArrayList<>();
         List<Map<String,?>> resultList = this.linearEventReposiory.QueryDataLP(le.getThematique1(),le.getThematique2());
+//        for(Map<String,?> de: resultList){
+//            Clob data = (Clob) de.get("route_geometry");
+//            System.out.println(data.getSubString(0, (int) data.length()));
+//        }
 
-        return resultList;
+//        achraf aouad
+
+        int regionIndex = 1;
+        for(Map<String, ?> intersection : resultList) {
+
+            System.out.println("\nIndia Region - " + regionIndex);
+            System.out.println("============================"
+                    + "======================");
+
+            // get entrySet() into Set
+            Set<String> setOfIndianStates = intersection.keySet();
+
+            // Collection Iterator
+            Iterator<String> iterator =
+                    setOfIndianStates.iterator();
+
+            // iterate using while-loop after getting Iterator
+            Map<String,String> map = new HashMap<String, String>();
+            while(iterator.hasNext()) {
+
+                String key = iterator.next();
+                if(key.equals("ROUTE_GEOMETRY") || key.equals("ROUTE_GEOMETRY_1")){
+                    Clob varr = (Clob) intersection.get(key);
+                    Reader r = varr.getCharacterStream();
+                    int j = 0;
+                    StringBuffer buffer = new StringBuffer();
+                    int ch;
+                    while ((ch = r.read())!=-1) {
+                        buffer.append(""+(char)ch);
+                    }
+                    String data = buffer.toString();
+                    j++;
+                    map.put(key,data);
+
+
+                }else{
+                    System.out.println("State : " + key
+                            + "\tCapital : " + intersection.get(key));
+                    map.put(key,"" + intersection.get(key));
+
+                }
+
+            }
+
+            // increment region index by 1
+            resultList2.add(map);
+            regionIndex++;
+        }
+
+
+        return resultList2;
     }
 
 
- public  List<String> getLineJson(List<Double> le) {
+ public  List<String> getLineJson(List<Double> le) throws SQLException, IOException {
 
      List<String> resultList = new ArrayList<>();
 
         for(Double data :le){
-            String varr = this.linearEventReposiory.getLineJson(data);
-            resultList.add(varr);
+            String data1;
+            Clob varr = this.linearEventReposiory.getLineJson(data);
+            Reader r = varr.getCharacterStream();
+            int j = 0;
+            StringBuffer buffer = new StringBuffer();
+            int ch;
+            while ((ch = r.read())!=-1) {
+                buffer.append(""+(char)ch);
+            }
+            System.out.println(buffer.toString());
+            data1= buffer.toString();
+            j++;
+            resultList.add(data1);
         }
 
 
@@ -469,7 +586,7 @@ public List<String> getGeojsonValuesdrowPoint( Double event_position , String ro
         return varr;
 
     }
-
+ //todo province
     public  String getProvinceJson(String le) throws SQLException, IOException {
             String data;
             Clob varr = this.provinceRepository.getJson(le);
@@ -496,14 +613,12 @@ public List<String> getGeojsonValuesdrowPoint( Double event_position , String ro
 
     }
 
-
     public List<Map<String,?>> queryPonctuelDataS(QueryPonctualData le) {
 
         List<Map<String,?>> resultList = this.ponctuelEventReposiotory.QueryDataS(le.getThematique1(),le.getThematique2());
 
         return resultList;
     }
-
 
     public String getRouteNameByRouteId(Long le) {
 
@@ -543,13 +658,25 @@ public List<String> getGeojsonValuesdrowPoint( Double event_position , String ro
         return newestGeometry;
     }
 
-    public List<LinearEventWithGeometry> queryLinearDataForMap(String request) {
+    public List<LinearEventWithGeometry> queryLinearDataForMap(String request) throws SQLException, IOException {
         List<LinearEventWithGeometry> newestGeometry = new ArrayList<>();
-
+        String data;
         for( Linear_Event ver : this.queryLinearData(request)){
             LinearEventWithGeometry dd = LinearEventWithGeometry.builder().id(ver.getId()).route_name(ver.getRoute_name()).pkd(ver.getPkd()).pkf(ver.getPkf()).voie(ver.getVoie()).event_name(ver.getEvent_type().getName()).route_id(ver.getLrs_routes().getRoute_id()).build();
-            String varr = this.linearEventReposiory.getLineJson(dd.getId());
-            dd.setJsond(varr);
+
+            Clob varr = this.linearEventReposiory.getLineJson(dd.getId());
+            Reader r = varr.getCharacterStream();
+            int j = 0;
+            StringBuffer buffer = new StringBuffer();
+            int ch;
+            while ((ch = r.read())!=-1) {
+                buffer.append(""+(char)ch);
+            }
+            System.out.println(buffer.toString());
+            data= buffer.toString();
+            j++;
+
+            dd.setJsond(data);
             newestGeometry.add(dd);
         }
 
@@ -679,7 +806,6 @@ public List<String> getGeojsonValuesdrowPoint( Double event_position , String ro
 
 
     }
-
     public void deleteByID(Lrs_routes le){
 
             System.out.println("from service");
@@ -691,6 +817,30 @@ public List<String> getGeojsonValuesdrowPoint( Double event_position , String ro
 
     }
 
+    public void addProfil(Profil le){
+
+            System.out.println("from service");
+            System.out.println(le);
+            le.setDateAjout( new Date());
+
+            this.profilRepository.save(le);
+
+    }
+ public List<Profil> getprofiles(){
+
+
+
+           return this.profilRepository.findAll();
+
+    }
+
+    public Optional<Profil> profileByid(Long id){
+
+           return this.profilRepository.findById(id);
+
+    }
+
+
     public void changeName(ChangeName le){
 
 
@@ -701,6 +851,360 @@ public List<String> getGeojsonValuesdrowPoint( Double event_position , String ro
 
     }
 
+   //brahim irhamni
+
+
+    public Info getinfo() {
+        Double somme = 0D;
+        Integer somme2 = 0;
+        Double somme3 = 0D;
+        for (Linear_Event linear_event : this.linearEventReposiory.findAll()) {
+            somme = somme +  (linear_event.getPkf()-linear_event.getPkd())/10000;
+        }
+
+        somme2 =this.ponctuelEventReposiotory.findAll().size();
+        for (Lrs_routes lrs_routes : this.lrsRoutesRepository.findAll()) {
+            somme3 = somme3 +  (lrs_routes.getPkf()-lrs_routes.getPkd())/10000;
+        }
+
+        return  Info.builder().kiloLinear(somme).kiloRoute(somme3).nbPoint(somme2).build();
+    }
+
+    public List<Datagraph> createGraph() {
+        List <EventType> evt = this.eventTypeRepository.findAll();
+        List<String> eventsName = new ArrayList<>();
+        for(EventType tt: evt){
+            eventsName.add(tt.getName());
+        }
+
+        Date dt=new Date();
+        Integer year=dt.getYear();
+        Double somme = 0D;
+        List<Datagraph> dss = new ArrayList<>();
+        for(String t : eventsName){
+            Datagraph ds = new Datagraph();
+            ds.setName(t);
+        for(var i = 1;i<=12;i++){
+            for (Linear_Event linear_event : this.linearEventReposiory.findAll()) {
+                if(linear_event.getDate_ajoute() != null){
+                if((linear_event.getDate_ajoute().getMonth()) == i && linear_event.getDate_ajoute().getYear() == year){
+                    if(linear_event.getEvent_type().getName().equals(t)){
+                        somme = somme +  (linear_event.getPkf()-linear_event.getPkd())/10000;
+                    }
+                }
+            }
+            }
+            if(somme == 0 ){
+                somme =null;
+            }
+            ds.getData().add(somme);
+            somme = 0D;
+        }
+
+        dss.add(ds);
+        }
+
+        return dss;
+
+    }
+
+    public List<Datagraph> getgraphponctuel() {
+        List <EventType> evt = this.eventTypeRepository.findAll();
+        List<String> eventsName = new ArrayList<>();
+        for(EventType tt: evt){
+            eventsName.add(tt.getName());
+        }
+
+        Date dt=new Date();
+        Integer year=dt.getYear();
+        Double somme = 0D;
+        List<Datagraph> dss = new ArrayList<>();
+        for(String t : eventsName){
+            Datagraph ds = new Datagraph();
+            ds.setName(t);
+            for(var i = 1;i<=12;i++){
+                for (Ponctuel_Events ponctuel_events : this.ponctuelEventReposiotory.findAll()) {
+                    if(ponctuel_events.getDate_ajoute() != null){
+                    if((ponctuel_events.getDate_ajoute().getMonth()) == i && ponctuel_events.getDate_ajoute().getYear() == year){
+                        if(ponctuel_events.getEvent_type().getName().equals(t)){
+                            somme = somme +  1;
+                        }
+                    }
+                }
+                }
+                if(somme == 0 ){
+                    somme =null;
+                }
+                ds.getData().add(somme);
+                somme = 0D;
+            }
+
+            dss.add(ds);
+        }
+
+        return dss;
+
+    }
+    public List<DataSynoptique> createSynoptique2Analyse(Synoptique_param2 le) {
+
+
+        Date dt=new Date();
+        Integer year=dt.getYear() + 1900;
+        List<Integer> years = new ArrayList<>();
+        years.add(year);
+        for(int i =1;i<10;i++){
+            years.add(year-i);
+        }
+
+        String rtName =  le.getRouteName();
+        int voie = le.getVoie();
+
+
+
+        List<DataSynoptique> dss = new ArrayList<>();
+
+        System.out.println("hmed hmed");
+        List<EventAttribut> eventsAtt = new ArrayList<>();
+
+        eventsAtt.add(EventAttribut.builder().name(le.getEvent1()).attrribute(le.getAttrribute1()).build());
+
+        for(Integer t : years){
+            for(EventAttribut eventAtrribute : eventsAtt){
+
+                System.out.println(eventAtrribute);
+                for (Linear_Event linear_event : this.linearEventReposiory.findAll()) {
+                    if(le.getPkd() != null && le.getPkf() != null){
+                        if(linear_event.getPkd() > le.getPkd() && linear_event.getPkf() < le.getPkf()){
+                            if(linear_event.getDate_ajoute() != null){
+                            if((linear_event.getDate_ajoute().getYear()+1900) == t ){
+                            if(linear_event.getVoie() == voie){
+                                if(linear_event.getRoute_name().equals(le.getRouteName())){
+                                    if(linear_event.getEvent_type().getName().equals(eventAtrribute.getName())){
+                                        System.out.println("achraf dj");
+                                        if(eventAtrribute.getAttrribute().equals("c1")){
+                                            DataSynoptique ds = new DataSynoptique();
+                                            ds.setName(linear_event.getC1());
+                                            CoordinateSynoptique crrd = new CoordinateSynoptique();
+                                            crrd.setX(Integer.toString(t));
+                                            crrd.setY(List.of(linear_event.getPkd(),linear_event.getPkf()));
+                                            ds.getData().add(crrd);
+                                            dss.add(ds);
+
+                                        }
+                                        if(eventAtrribute.getAttrribute().equals("c2")){
+                                            DataSynoptique ds = new DataSynoptique();
+                                            ds.setName(linear_event.getC2());
+                                            CoordinateSynoptique crrd = new CoordinateSynoptique();
+                                            crrd.setX(Integer.toString(t));
+                                            crrd.setY(List.of(linear_event.getPkd(),linear_event.getPkf()));
+                                            ds.getData().add(crrd);
+                                            dss.add(ds);
+                                        }
+                                        if(eventAtrribute.getAttrribute().equals("c3")){
+                                            DataSynoptique ds = new DataSynoptique();
+                                            ds.setName(linear_event.getC3());
+                                            CoordinateSynoptique crrd = new CoordinateSynoptique();
+                                            crrd.setX(Integer.toString(t));
+                                            crrd.setY(List.of(linear_event.getPkd(),linear_event.getPkf()));
+                                            ds.getData().add(crrd);
+                                            dss.add(ds);
+                                        }
+
+                                    }
+                                }
+
+                            }
+                        }
+                        }
+                        }
+                    }
+                }
+
+            }
+
+            for(EventAttribut eventAtrribute : eventsAtt){
+
+                System.out.println(eventAtrribute);
+                for (Ponctuel_Events ponctuel_events : this.ponctuelEventReposiotory.findAll()) {
+                    if(le.getPkd() != null && le.getPkf() != null){
+                        if(ponctuel_events.getPkEvent() > le.getPkd() && ponctuel_events.getPkEvent() < le.getPkf()){
+                            if(ponctuel_events.getDate_ajoute() != null){
+                            if((ponctuel_events.getDate_ajoute().getYear()+1900) == t ){
+                            if(ponctuel_events.getVoie() == voie){
+                                if(ponctuel_events.getRoute_name().equals(le.getRouteName())){
+                                    if(ponctuel_events.getEvent_type().getName().equals(eventAtrribute.getName())){
+                                        System.out.println("achraf dj");
+                                        if(eventAtrribute.getAttrribute().equals("c1")){
+                                            DataSynoptique ds = new DataSynoptique();
+                                            ds.setName(ponctuel_events.getC1());
+                                            CoordinateSynoptique crrd = new CoordinateSynoptique();
+                                            crrd.setX(Integer.toString(t));
+                                            crrd.setY(List.of(ponctuel_events.getPkEvent(),ponctuel_events.getPkEvent() + 10));
+                                            ds.getData().add(crrd);
+                                            dss.add(ds);
+
+                                        }
+                                        if(eventAtrribute.getAttrribute().equals("c2")){
+                                            DataSynoptique ds = new DataSynoptique();
+                                            ds.setName(ponctuel_events.getC2());
+                                            CoordinateSynoptique crrd = new CoordinateSynoptique();
+                                            crrd.setX(Integer.toString(t));
+                                            crrd.setY(List.of(ponctuel_events.getPkEvent(),ponctuel_events.getPkEvent()));
+                                            ds.getData().add(crrd);
+                                            dss.add(ds);
+                                        }
+                                        if(eventAtrribute.getAttrribute().equals("c3")){
+                                            DataSynoptique ds = new DataSynoptique();
+                                            ds.setName(ponctuel_events.getC3());
+                                            CoordinateSynoptique crrd = new CoordinateSynoptique();
+                                            crrd.setX(Integer.toString(t));
+                                            crrd.setY(List.of(ponctuel_events.getPkEvent(),ponctuel_events.getPkEvent()));
+                                            ds.getData().add(crrd);
+                                            dss.add(ds);
+                                        }
+
+                                    }
+                                }
+
+                            }
+                            }
+                        }
+                        }
+                    }
+                }
+
+            }
+        }
+
+
+
+
+
+        System.out.println("brahim irhamni");
+        System.out.println(dss);
+
+        return dss;
+
+    }
+    public List<DataSynoptique> createSynoptique2(Synoptique_param2 le) {
+
+        System.out.println("hmed hmed");
+        List<DataSynoptique> dss = new ArrayList<>();
+        String rtName =  le.getRouteName();
+        int voie = le.getVoie();
+        List <EventType> evt = this.eventTypeRepository.findAll();
+        List<EventAttribut> eventsAtt = new ArrayList<>();
+
+
+        eventsAtt.add(EventAttribut.builder().name(le.getEvent1()).attrribute(le.getAttrribute1()).build());
+        eventsAtt.add(EventAttribut.builder().name(le.getEvent2()).attrribute(le.getAttrribute2()).build());
+        eventsAtt.add(EventAttribut.builder().name(le.getEvent3()).attrribute(le.getAttrribute3()).build());
+
+
+        for(EventAttribut eventAtrribute : eventsAtt){
+
+            System.out.println(eventAtrribute);
+            for (Linear_Event linear_event : this.linearEventReposiory.findAll()) {
+                if(le.getPkd() != null && le.getPkf() != null){
+                    if(linear_event.getPkd() > le.getPkd() && linear_event.getPkf() < le.getPkf()){
+                        if(linear_event.getVoie() == voie){
+                            if(linear_event.getRoute_name().equals(le.getRouteName())){
+                                if(linear_event.getEvent_type().getName().equals(eventAtrribute.getName())){
+                                    System.out.println("achraf dj");
+                                    if(eventAtrribute.getAttrribute().equals("c1")){
+                                        DataSynoptique ds = new DataSynoptique();
+                                        ds.setName(linear_event.getC1());
+                                        CoordinateSynoptique crrd = new CoordinateSynoptique();
+                                        crrd.setX(eventAtrribute.getName());
+                                        crrd.setY(List.of(linear_event.getPkd(),linear_event.getPkf()));
+                                        ds.getData().add(crrd);
+                                        dss.add(ds);
+
+                                    }
+                                    if(eventAtrribute.getAttrribute().equals("c2")){
+                                        DataSynoptique ds = new DataSynoptique();
+                                        ds.setName(linear_event.getC2());
+                                        CoordinateSynoptique crrd = new CoordinateSynoptique();
+                                        crrd.setX(eventAtrribute.getName());
+                                        crrd.setY(List.of(linear_event.getPkd(),linear_event.getPkf()));
+                                        ds.getData().add(crrd);
+                                        dss.add(ds);
+                                    }
+                                    if(eventAtrribute.getAttrribute().equals("c3")){
+                                        DataSynoptique ds = new DataSynoptique();
+                                        ds.setName(linear_event.getC3());
+                                        CoordinateSynoptique crrd = new CoordinateSynoptique();
+                                        crrd.setX(eventAtrribute.getName());
+                                        crrd.setY(List.of(linear_event.getPkd(),linear_event.getPkf()));
+                                        ds.getData().add(crrd);
+                                        dss.add(ds);
+                                    }
+
+                                }
+                            }
+
+                        }
+                    }
+                }
+            }
+
+        }
+
+        for(EventAttribut eventAtrribute : eventsAtt){
+
+            System.out.println(eventAtrribute);
+            for (Ponctuel_Events ponctuel_events : this.ponctuelEventReposiotory.findAll()) {
+                if(le.getPkd() != null && le.getPkf() != null){
+                    if(ponctuel_events.getPkEvent() > le.getPkd() && ponctuel_events.getPkEvent() < le.getPkf()){
+                        if(ponctuel_events.getVoie() == voie){
+                            if(ponctuel_events.getRoute_name().equals(le.getRouteName())){
+                                if(ponctuel_events.getEvent_type().getName().equals(eventAtrribute.getName())){
+                                    System.out.println("achraf dj");
+                                    if(eventAtrribute.getAttrribute().equals("c1")){
+                                        DataSynoptique ds = new DataSynoptique();
+                                        ds.setName(ponctuel_events.getC1());
+                                        CoordinateSynoptique crrd = new CoordinateSynoptique();
+                                        crrd.setX(eventAtrribute.getName());
+                                        crrd.setY(List.of(ponctuel_events.getPkEvent(),ponctuel_events.getPkEvent() + 10));
+                                        ds.getData().add(crrd);
+                                        dss.add(ds);
+
+                                    }
+                                    if(eventAtrribute.getAttrribute().equals("c2")){
+                                        DataSynoptique ds = new DataSynoptique();
+                                        ds.setName(ponctuel_events.getC2());
+                                        CoordinateSynoptique crrd = new CoordinateSynoptique();
+                                        crrd.setX(eventAtrribute.getName());
+                                        crrd.setY(List.of(ponctuel_events.getPkEvent(),ponctuel_events.getPkEvent()));
+                                        ds.getData().add(crrd);
+                                        dss.add(ds);
+                                    }
+                                    if(eventAtrribute.getAttrribute().equals("c3")){
+                                        DataSynoptique ds = new DataSynoptique();
+                                        ds.setName(ponctuel_events.getC3());
+                                        CoordinateSynoptique crrd = new CoordinateSynoptique();
+                                        crrd.setX(eventAtrribute.getName());
+                                        crrd.setY(List.of(ponctuel_events.getPkEvent(),ponctuel_events.getPkEvent()));
+                                        ds.getData().add(crrd);
+                                        dss.add(ds);
+                                    }
+
+                                }
+                            }
+
+                        }
+                    }
+                }
+            }
+
+        }
+
+        System.out.println("brahim irhamni");
+        System.out.println(dss);
+
+        return dss;
+
+    }
 
 
     public List<DataSynoptique> createSynoptique(Synoptique_param le) {
@@ -721,6 +1225,9 @@ public List<String> getGeojsonValuesdrowPoint( Double event_position , String ro
             DataSynoptique ds = new DataSynoptique();
             ds.setName(t);
             for (Linear_Event linear_event : this.linearEventReposiory.findAll()) {
+                if(le.getPkd() != null && le.getPkf() != null){
+
+
                 if(linear_event.getPkd() > le.getPkd() && linear_event.getPkf() < le.getPkf()){
 
                     if(linear_event.getVoie() == voie){
@@ -736,6 +1243,7 @@ public List<String> getGeojsonValuesdrowPoint( Double event_position , String ro
                             }
                         }
                   }
+                }
                 }
             }
 

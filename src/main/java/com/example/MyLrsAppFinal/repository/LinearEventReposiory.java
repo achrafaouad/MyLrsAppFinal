@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import javax.persistence.EntityManager;
+import java.sql.Clob;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +56,7 @@ public interface LinearEventReposiory extends JpaRepository<Linear_Event,Long> {
 
 
     @Query( value ="select jsonLine(:id2) from dual", nativeQuery = true)
-    String getLineJson(@Param("id2") double id2);
+    Clob getLineJson(@Param("id2") double id2);
 
 
 
@@ -81,6 +82,3 @@ public interface LinearEventReposiory extends JpaRepository<Linear_Event,Long> {
     List<Linear_Event> findBetweenTwoDates();
 
 }
-
-
-

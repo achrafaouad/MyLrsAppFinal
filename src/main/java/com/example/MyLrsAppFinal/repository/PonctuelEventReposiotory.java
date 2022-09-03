@@ -35,6 +35,10 @@ public interface PonctuelEventReposiotory extends JpaRepository<Ponctuel_Events,
             List<Map<String,?>> QueryDataS(@Param("thematique1") Double thematique1 , @Param("thematique2")Double thematique2);
 
 
+    @Query( value ="select getByCoordEvent(:pointx, :pointY) from dual", nativeQuery = true)
+            Double getByCoordEvent(@Param("pointx") Double pointx,@Param("pointY") Double pointY);
+
+
 
   @Query( value ="select * from Table(MyIntersectionPOintToPointP(:thematique1,:thematique2;:pkEv))", nativeQuery = true)
             List<Map<String,?>> QueryDataP(@Param("thematique1") Double thematique1 , @Param("thematique2")Double thematique2 ,@Param("pkEv")Double pkEv );

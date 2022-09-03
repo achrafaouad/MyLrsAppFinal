@@ -2,6 +2,7 @@ package com.example.MyLrsAppFinal.Models;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.context.annotation.Profile;
 
 import javax.persistence.*;
 import java.util.*;
@@ -38,11 +39,7 @@ public class MyUser {
 //    @JoinColumn(name = "province_id", referencedColumnName = "id")
 //    private Province province;
 
-    @ManyToMany
-    @JoinTable(
-    name = "UserProvince",
-    joinColumns = @JoinColumn(name = "id"),
-    inverseJoinColumns = @JoinColumn(name = "id_province"))
-    private Set<Province> provinces = new HashSet<>();
+    @ManyToOne(fetch= FetchType.EAGER)
+    Profil profil;
 }
 

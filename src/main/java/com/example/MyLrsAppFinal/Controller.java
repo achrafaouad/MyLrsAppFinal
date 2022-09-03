@@ -14,6 +14,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 
+import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.core.io.ClassPathResource;
@@ -112,7 +113,7 @@ public class Controller implements ErrorController {
             return new ResponseEntity<>(HttpStatus.OK);
         }else{
             ErrorResponse errorResponse = new ErrorResponse();
-            errorResponse.setMessage("please verify the Line Number" + ver);
+            errorResponse.setMessage("please verify the Line Number     " + ver);
             return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
         }
 
@@ -254,6 +255,12 @@ public class Controller implements ErrorController {
 
     }
 
+    @PostMapping("/getByCoordEvent")
+    public ResponseEntity<?> getByCoordEvent(@RequestBody MapPoint Le) {
+        System.out.println(Le);
+        Double ver = this.lrsService.getByCoordEvent(Le);
+        return new ResponseEntity<>(ver,HttpStatus.OK);
+    }
 
     @PostMapping("/addNewPointEvent")
     public ResponseEntity<?> addNewPointEventFromMap(@RequestBody MapPoint Le) {
@@ -299,12 +306,33 @@ public class Controller implements ErrorController {
         return new ResponseEntity<String>(ref,HttpStatus.OK);
     }
 
-
-
     @GetMapping("/getProvinces")
     public ResponseEntity<?> getProvinces() {
         List<String> eventsType = this.lrsService.getProvinces();
         return new ResponseEntity<>(eventsType,HttpStatus.OK);
+
+    }
+
+
+
+    @GetMapping("/createGraph")
+    public ResponseEntity<?> createGraph() {
+        List<Datagraph> datagraphList = this.lrsService.createGraph();
+        return new ResponseEntity<>(datagraphList,HttpStatus.OK);
+
+    }
+
+
+    @GetMapping("/getgraphponctuel")
+    public ResponseEntity<?> getgraphponctuel() {
+        List<Datagraph> datagraphList = this.lrsService.getgraphponctuel();
+        return new ResponseEntity<>(datagraphList,HttpStatus.OK);
+
+    }
+    @GetMapping("/getinfo")
+    public ResponseEntity<?> getinfo() {
+        Info datagraphList = this.lrsService.getinfo();
+        return new ResponseEntity<>(datagraphList,HttpStatus.OK);
 
     }
 
@@ -366,9 +394,9 @@ public class Controller implements ErrorController {
 
 
     @PostMapping("/queryLinearData2")
-    public ResponseEntity<?> query2(@RequestBody QueryLineData Le) {
+    public ResponseEntity<?> query2(@RequestBody QueryLineData Le) throws SQLException, IOException {
         System.out.println(Le);
-        List<Map<String,?>> ver = this.lrsService.queryLinearData2(Le);
+        List<Map<String,String>> ver = this.lrsService.queryLinearData2(Le);
 
         System.out.println(Le);
             return new ResponseEntity<>(ver ,HttpStatus.OK);
@@ -420,7 +448,7 @@ public class Controller implements ErrorController {
 
 
     @PostMapping("/getLineJson")
-    public ResponseEntity<?> getLineJson(@RequestBody List<Double> Le) {
+    public ResponseEntity<?> getLineJson(@RequestBody List<Double> Le) throws SQLException, IOException {
         System.out.println(Le);
         List<String> ver = this.lrsService.getLineJson(Le);
 
@@ -437,11 +465,12 @@ public class Controller implements ErrorController {
             return new ResponseEntity<>(ver ,HttpStatus.OK);
     }
 
-
+//todoproblem
+    @SneakyThrows
     @PostMapping("/queryLinearAndPonctual")
-    public ResponseEntity<?> queryLinearAndPonctual(@RequestBody QueryLineData Le) {
+    public ResponseEntity<?> queryLinearAndPonctual(@RequestBody QueryLineData Le) throws SQLException {
 
-        List<Map<String,?>> ver = this.lrsService.queryLinearAndPonctual(Le);
+        List<Map<String,String>> ver = this.lrsService.queryLinearAndPonctual(Le);
 
         System.out.println(Le);
             return new ResponseEntity<>(ver ,HttpStatus.OK);
@@ -478,18 +507,26 @@ public class Controller implements ErrorController {
 
     }
 
+    @SneakyThrows
     @PostMapping("/queryLinearDataForMap")
-    public ResponseEntity<?> queryLinearDataForMap(@RequestBody linearDataForMapReq Le) {
+    public ResponseEntity<?> queryLinearDataForMap(@RequestBody linearDataForMapReq Le) throws SQLException, IOException {
 
         String regex = ".*[a-zA-Z].*";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcherText = pattern.matcher(Le.getValeur());
         Boolean textMatches = matcherText.matches();
         if(textMatches){
-            String request = "select  * from linear_event where "+ Le.getAttribute().toLowerCase() + " " + Le.getOperateur() + " " + "\'" + Le.getValeur() + "\'" + " and event_type_id =  " +Le.getThematiqueid();
-            return new ResponseEntity<>(this.lrsService.queryLinearDataForMap(request),HttpStatus.OK);
+            if(Le.getValeur() == "like"){
+                String request = "select  * from linear_event where "+ Le.getAttribute().toLowerCase() + " " + Le.getOperateur() + " " + "\'" + Le.getValeur() + "%'" + " and event_type_id =  " +Le.getThematiqueid();
+                return new ResponseEntity<>(this.lrsService.queryLinearDataForMap(request),HttpStatus.OK);
+            }else{
+                String request = "select  * from linear_event where "+ Le.getAttribute().toLowerCase() + " " + Le.getOperateur() + " " + "\'" + Le.getValeur() + "\'" + " and event_type_id =  " +Le.getThematiqueid();
+                return new ResponseEntity<>(this.lrsService.queryLinearDataForMap(request),HttpStatus.OK);
+            }
+
 
         }else{
+
             String request = "select  * from linear_event where "+ Le.getAttribute().toLowerCase() + " " + Le.getOperateur() + " " + Le.getValeur() + " and event_type_id =  " +Le.getThematiqueid();
             return new ResponseEntity<>(this.lrsService.queryLinearDataForMap(request),HttpStatus.OK);
 
@@ -536,6 +573,9 @@ public class Controller implements ErrorController {
         return new ResponseEntity<>(ver ,HttpStatus.OK);
     }
 
+
+
+
     @PostMapping("/addNewSection")
     public ResponseEntity<?> addNewsectionFromMap(@RequestBody NewRouteModel Le) {
         Integer ver = this.lrsService.addNewSectionService(Le);
@@ -554,12 +594,12 @@ public class Controller implements ErrorController {
 
     @PostMapping("/addRef")
     public ResponseEntity<?> addRef(@RequestBody List<RefModel> Le) {
-
+        System.out.println(Le);
         Integer verrr = this.lrsService.addNewRefVer(Le);
         if(verrr == 0){
             Integer ver = this.lrsService.addNewRef(Le);
             System.out.println(Le.get(0).getRoute_name());
-            System.out.println(Le.get(0).getVoie());    
+            System.out.println(Le.get(0).getVoie());
             System.out.println(Le.get(0).getGeometry());
             if (ver == 0) {
                 return new ResponseEntity<>(HttpStatus.OK);
@@ -577,6 +617,9 @@ public class Controller implements ErrorController {
             return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
         }
 
+
+
+
     }
 
     @PostMapping("/createSynoptique")
@@ -587,9 +630,20 @@ public class Controller implements ErrorController {
 
     }
 
-    @PostMapping("/createAdvancedSynoptique")
-    public ResponseEntity<?> createAdvancedSynoptique(@RequestBody Synoptique_param Le) {
-        List<DataSynoptique> ver = this.lrsService.createAdvancedSynoptique(Le);
+    @PostMapping("/createSynoptique2")
+    public ResponseEntity<?> createSynoptique2(@RequestBody Synoptique_param2 Le) {
+             System.out.println(Le);
+             System.out.println("achraf aouad7");
+            return new ResponseEntity<>(this.lrsService.createSynoptique2(Le),HttpStatus.OK);
+
+    }
+
+
+    @PostMapping("/createSynoptique2Analyse")
+    public ResponseEntity<?> createSynoptique2Analyse(@RequestBody Synoptique_param2 Le) {
+        System.out.println(Le);
+        System.out.println("achraf aouad 144");
+        List<DataSynoptique> ver = this.lrsService.createSynoptique2Analyse(Le);
 
             return new ResponseEntity<>(ver,HttpStatus.OK);
 
@@ -634,13 +688,20 @@ public class Controller implements ErrorController {
        this.lrsService.changePKByID(Le);
        return new ResponseEntity<>(HttpStatus.OK);
    }
-
    @PostMapping("/deleteByID")
    public ResponseEntity<?> deleteByID(@RequestBody Lrs_routes Le){
        System.out.println(Le);
        this.lrsService.deleteByID(Le);
        return new ResponseEntity<>(HttpStatus.OK);
    }
+
+   @PostMapping("/addprofil")
+   public ResponseEntity<?> addprofil(@RequestBody Profil Le){
+       System.out.println(Le);
+       this.lrsService.addProfil(Le);
+       return new ResponseEntity<>(HttpStatus.OK);
+   }
+
 
    @PostMapping("/change_name")
    public ResponseEntity<?> change_name(@RequestBody ChangeName Le){
@@ -930,6 +991,19 @@ public class Controller implements ErrorController {
     public ResponseEntity<?> getUsers(){
         this.userService.getUsers();
         return new ResponseEntity<>(this.userService.getUsers(),HttpStatus.OK);
+    }
+
+    @PostMapping("/getprofiles")
+    public ResponseEntity<?> getprofiles(){
+
+        return new ResponseEntity<>(this.lrsService.getprofiles(),HttpStatus.OK);
+    }
+
+    @PostMapping("/profileByid")
+    public ResponseEntity<?> profileByid(Long id){
+        System.out.println(id);
+
+        return new ResponseEntity<>(this.lrsService.profileByid(id),HttpStatus.OK);
     }
 
     @PostMapping("/updateUser")

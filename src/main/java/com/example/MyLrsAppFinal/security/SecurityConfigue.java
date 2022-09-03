@@ -53,8 +53,7 @@ public class SecurityConfigue extends WebSecurityConfigurerAdapter {
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
         http.authorizeRequests().antMatchers(GET,"/LrsEvent/refreshToken/**").permitAll();
         http.authorizeRequests().antMatchers(GET,"/LrsEvent/video/**").permitAll();
-        http.authorizeRequests().antMatchers(GET,"/LrsEvent/images/**").permitAll();
-
+        http.authorizeRequests().antMatchers(GET,"/images/**").permitAll();
 
         http.authorizeRequests().antMatchers(POST,"/LrsEvent/**").permitAll();
         http.authorizeRequests().antMatchers(GET,"/LrsEvent/**").permitAll();
